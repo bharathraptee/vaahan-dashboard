@@ -134,16 +134,7 @@ export const Header = ({
 
           {/* Export to PDF Button */}
           <button
-            onClick={async () => {
-              if (window.electronAPI && window.electronAPI.exportToPDF) {
-                const result = await window.electronAPI.exportToPDF();
-                if (result && !result.success && !result.cancelled) {
-                  alert("Failed to export PDF: " + result.error);
-                }
-              } else {
-                window.print();
-              }
-            }}
+            onClick={() => window.print()}
             className="export-pdf-btn"
             style={{
               display: 'inline-flex',

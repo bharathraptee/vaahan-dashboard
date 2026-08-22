@@ -31,7 +31,10 @@ async function start() {
     shell: true
   });
 
+  const frontendDir = fs.existsSync(path.join(process.cwd(), 'frontend')) ? path.join(process.cwd(), 'frontend') : process.cwd();
+
   const frontend = spawn('npx', ['vite'], {
+    cwd: frontendDir,
     stdio: 'inherit',
     shell: true,
     env: {

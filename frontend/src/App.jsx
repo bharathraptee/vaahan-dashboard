@@ -208,8 +208,6 @@ function App() {
     }
   }
 
-  // Auto-fetch removed: user must click "Apply Filters" explicitly
-
   const getChartData = useCallback((endpointKey) => {
     return formatMultiSeriesChartData(data, endpointKey, selectedCompanies, rtoCode, selectedCities, cityRtoData, timeFilter, fromYear, toYear)
   }, [data, selectedCompanies, rtoCode, selectedCities, cityRtoData, timeFilter, fromYear, toYear])
