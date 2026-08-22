@@ -190,7 +190,7 @@ def background_sync_all_makers():
     try:
         all_companies = set(COMPANIES_CACHE)
         page = 1
-        max_pages = 25
+        max_pages = 150
         consecutive_empty = 0
         
         while page <= max_pages:
@@ -210,7 +210,7 @@ def background_sync_all_makers():
                         COMPANIES_CACHE = sorted(list(all_companies))
                         print(f"[BACKGROUND SYNC] Page {page} loaded. Total makers so far: {len(COMPANIES_CACHE)}")
                         # Periodically persist progress to disk
-                        if page % 3 == 0:
+                        if page % 5 == 0:
                             save_cached_companies(COMPANIES_CACHE)
                     page += 1
                 else:
@@ -231,8 +231,8 @@ def background_sync_all_makers():
 
 @app.on_event("startup")
 def startup_event():
-    # If the cache is only the seed list (< 500 makers), start background sync automatically
-    if len(COMPANIES_CACHE) < 500:
+    # If fewer than 7500 makers are in cache, continue background sync
+    if len(COMPANIES_CACHE) < 7500:
         thread = threading.Thread(target=background_sync_all_makers, daemon=True)
         thread.start()
 
@@ -240,8 +240,8 @@ def startup_event():
 def get_companies(background_tasks: BackgroundTasks):
     global COMPANIES_CACHE
     
-    # Trigger background sync if fewer than 500 makers are in cache
-    if len(COMPANIES_CACHE) < 500 and not SYNC_IN_PROGRESS:
+    # Trigger background sync if fewer than 7500 makers are in cache
+    if len(COMPANIES_CACHE) < 7500 and not SYNC_IN_PROGRESS:
         background_tasks.add_task(background_sync_all_makers)
 
     # Return immediately from cache without delay
@@ -256,7 +256,7 @@ def get_companies(background_tasks: BackgroundTasks):
 
 @app.get("/api/companies/sync")
 def trigger_companies_sync(background_tasks: BackgroundTasks):
-    """Endpoint to trigger full sync of all 1,800+ makers in background."""
+    """Endpoint to trigger full sync of all makers in background."""
     if not SYNC_IN_PROGRESS:
         background_tasks.add_task(background_sync_all_makers)
         return {"status": "started", "current_count": len(COMPANIES_CACHE)}
