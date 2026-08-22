@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Dict, Any
@@ -110,6 +110,7 @@ CACHE_FILE = os.path.join(os.path.dirname(__file__), "companies_cache.json")
 COMPANIES_CACHE = []
 QUERY_CACHE: Dict[str, Any] = {}
 RTO_CACHE: Dict[str, Any] = {}
+SYNC_IN_PROGRESS = False
 
 def load_cached_companies():
     global COMPANIES_CACHE
@@ -174,11 +175,76 @@ def safe_request_get(url, params=None, timeout=15, max_attempts=3):
                 return None
     return None
 
+def background_sync_all_makers():
+    """
+    Background worker that systematically fetches all pages of vehicle makers
+    from Vahan without blocking users or triggering rate limits.
+    """
+    global COMPANIES_CACHE, SYNC_IN_PROGRESS
+    if SYNC_IN_PROGRESS:
+        return
+    
+    SYNC_IN_PROGRESS = True
+    print("[BACKGROUND SYNC] Starting background fetch of all Vahan vehicle makers...")
+    
+    try:
+        all_companies = set(COMPANIES_CACHE)
+        page = 1
+        max_pages = 25
+        consecutive_empty = 0
+        
+        while page <= max_pages:
+            url = f"https://analytics.parivahan.gov.in/analytics/publicdashboard/lazy/vehicle-makers?page={page}&size=100&search="
+            try:
+                r = safe_request_get(url, timeout=15, max_attempts=2)
+                if r and r.status_code == 200:
+                    data = r.json()
+                    if not data or not isinstance(data, list) or len(data) == 0:
+                        consecutive_empty += 1
+                        if consecutive_empty >= 2:
+                            print(f"[BACKGROUND SYNC] No more makers found. Completed at page {page}.")
+                            break
+                    else:
+                        consecutive_empty = 0
+                        all_companies.update(data)
+                        COMPANIES_CACHE = sorted(list(all_companies))
+                        print(f"[BACKGROUND SYNC] Page {page} loaded. Total makers so far: {len(COMPANIES_CACHE)}")
+                        # Periodically persist progress to disk
+                        if page % 3 == 0:
+                            save_cached_companies(COMPANIES_CACHE)
+                    page += 1
+                else:
+                    print(f"[BACKGROUND SYNC] Stopped at page {page} with status {r.status_code if r else 'None'}")
+                    break
+            except Exception as err:
+                print(f"[BACKGROUND SYNC] Error on page {page}: {err}")
+                break
+                
+        if all_companies:
+            COMPANIES_CACHE = sorted(list(all_companies))
+            save_cached_companies(COMPANIES_CACHE)
+            print(f"[BACKGROUND SYNC] Successfully synced {len(COMPANIES_CACHE)} makers to disk!")
+    except Exception as e:
+        print(f"[BACKGROUND SYNC] Error during sync: {e}")
+    finally:
+        SYNC_IN_PROGRESS = False
+
+@app.on_event("startup")
+def startup_event():
+    # If the cache is only the seed list (< 500 makers), start background sync automatically
+    if len(COMPANIES_CACHE) < 500:
+        thread = threading.Thread(target=background_sync_all_makers, daemon=True)
+        thread.start()
+
 @app.get("/api/companies")
-def get_companies():
+def get_companies(background_tasks: BackgroundTasks):
     global COMPANIES_CACHE
     
-    # 1. Return immediately from memory or disk cache
+    # Trigger background sync if fewer than 500 makers are in cache
+    if len(COMPANIES_CACHE) < 500 and not SYNC_IN_PROGRESS:
+        background_tasks.add_task(background_sync_all_makers)
+
+    # Return immediately from cache without delay
     if COMPANIES_CACHE:
         return COMPANIES_CACHE
 
@@ -186,47 +252,15 @@ def get_companies():
     if loaded:
         return loaded
 
-    # 2. Otherwise fetch from Vahan strictly sequentially
-    try:
-        all_companies = set()
-        page = 1
-        max_pages = 200
-        consecutive_empty = 0
-
-        while page <= max_pages:
-            url = f"https://analytics.parivahan.gov.in/analytics/publicdashboard/lazy/vehicle-makers?page={page}&size=100&search="
-            try:
-                r = safe_request_get(url, timeout=12, max_attempts=2)
-                
-                if r and r.status_code == 200:
-                    data = r.json()
-                    if not data or not isinstance(data, list) or len(data) == 0:
-                        consecutive_empty += 1
-                        if consecutive_empty >= 2:
-                            break
-                    else:
-                        consecutive_empty = 0
-                        all_companies.update(data)
-                    page += 1
-                else:
-                    print(f"[COMPANIES] Stopped at page {page}")
-                    break
-            except Exception as req_err:
-                print(f"[COMPANIES] Warning on page {page}: {req_err}")
-                break
-        
-        if all_companies:
-            COMPANIES_CACHE = sorted(list(all_companies))
-            save_cached_companies(COMPANIES_CACHE)
-            return COMPANIES_CACHE
-    except Exception as e:
-        print(f"[COMPANIES] Error fetching from Vahan: {e}")
-
-    # Fallback to whatever is available
-    if COMPANIES_CACHE:
-        return COMPANIES_CACHE
-    
     raise HTTPException(status_code=500, detail="Vahan API is currently unreachable. Please try again later.")
+
+@app.get("/api/companies/sync")
+def trigger_companies_sync(background_tasks: BackgroundTasks):
+    """Endpoint to trigger full sync of all 1,800+ makers in background."""
+    if not SYNC_IN_PROGRESS:
+        background_tasks.add_task(background_sync_all_makers)
+        return {"status": "started", "current_count": len(COMPANIES_CACHE)}
+    return {"status": "already_running", "current_count": len(COMPANIES_CACHE)}
 
 @app.get("/api/rtos/{stateCode}")
 def get_rtos(stateCode: str):
