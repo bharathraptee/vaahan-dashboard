@@ -1,0 +1,6 @@
+backend/
+electron/
+build_backend/
+dist_backend/
+release/
+.venv/
