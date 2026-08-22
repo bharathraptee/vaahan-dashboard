@@ -1,15 +1,5 @@
-let portParam = null;
-if (window.electronAPI) {
-  try {
-    portParam = window.electronAPI.getBackendPortSync();
-  } catch (e) {
-    console.error("Failed to get port from IPC", e);
-  }
-}
-if (!portParam) {
-  const urlParams = new URLSearchParams(window.location.search);
-  portParam = urlParams.get('port');
-}
+const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+const portParam = urlParams ? urlParams.get('port') : null;
 
 const API_BASE_URL = portParam ? `http://localhost:${portParam}/api` : (import.meta.env.VITE_API_URL || 'http://localhost:8000/api')
 
