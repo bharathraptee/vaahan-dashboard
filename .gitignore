@@ -1,0 +1,25 @@
+# Node
+node_modules
+dist
+dist-ssr
+*.local
+
+# Python
+.venv
+venv
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+*.spec
+
+# Build & Electron
+build_backend/
+dist_backend/
+release/
+cert.pfx
+
+# Logs & OS
+*.log
+.DS_Store
+Thumbs.db
