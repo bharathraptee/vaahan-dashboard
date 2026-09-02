@@ -112,6 +112,7 @@ function App() {
         isBaseDropdownOpen={companyFilters.isBaseDropdownOpen}
         setIsBaseDropdownOpen={companyFilters.setIsBaseDropdownOpen}
         filteredBaseCompanies={companyFilters.filteredBaseCompanies}
+        loadingBaseSearch={companyFilters.loadingBaseSearch}
         selectBaseCompany={companyFilters.selectBaseCompany}
         baseCompany={companyFilters.baseCompany}
         getCompanyColor={getColorForCompany}
@@ -120,6 +121,7 @@ function App() {
         isCompetitorDropdownOpen={companyFilters.isCompetitorDropdownOpen}
         setIsCompetitorDropdownOpen={companyFilters.setIsCompetitorDropdownOpen}
         filteredCompetitorCompanies={companyFilters.filteredCompetitorCompanies}
+        loadingCompetitorSearch={companyFilters.loadingCompetitorSearch}
         selectCompetitor={companyFilters.selectCompetitor}
         competitorCompanies={companyFilters.competitorCompanies}
         removeCompetitor={companyFilters.removeCompetitor}

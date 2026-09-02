@@ -46,10 +46,11 @@ const safeFetch = async (url, options = {}, contextMessage) => {
 }
 
 /**
- * Fetches the list of vehicle makers / companies.
+ * Fetches the list of vehicle makers / companies (with optional Vahan portal search).
  */
-export const fetchCompanies = async () => {
-  return await safeFetch(`${API_BASE_URL}/companies`, {}, "Failed to fetch companies list.")
+export const fetchCompanies = async (search = "", page = 0, size = 25) => {
+  const queryParams = search ? `?search=${encodeURIComponent(search)}&page=${page}&size=${size}` : ''
+  return await safeFetch(`${API_BASE_URL}/companies${queryParams}`, {}, "Failed to fetch companies list.")
 }
 
 /**

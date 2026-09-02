@@ -11,6 +11,7 @@ export const SidebarFilters = ({
   isBaseDropdownOpen,
   setIsBaseDropdownOpen,
   filteredBaseCompanies,
+  loadingBaseSearch,
   selectBaseCompany,
   baseCompany,
   getCompanyColor,
@@ -19,6 +20,7 @@ export const SidebarFilters = ({
   isCompetitorDropdownOpen,
   setIsCompetitorDropdownOpen,
   filteredCompetitorCompanies,
+  loadingCompetitorSearch,
   selectCompetitor,
   competitorCompanies,
   removeCompetitor,
@@ -105,9 +107,14 @@ export const SidebarFilters = ({
               borderRadius: '4px', zIndex: 10, maxHeight: '250px', overflowY: 'auto',
               boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)'
             }}>
-              {filteredBaseCompanies.length === 0 ? (
+              {loadingBaseSearch ? (
+                <div style={{ padding: '10px', color: '#60a5fa', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span className="spinner" style={{ width: '14px', height: '14px', margin: 0, borderWidth: '2px' }}></span>
+                  Searching Vahan portal...
+                </div>
+              ) : filteredBaseCompanies.length === 0 ? (
                 <div style={{ padding: '10px', color: '#94a3b8' }}>
-                  {loadingCompanies ? "Loading makers from Vahan..." : "No matches found"}
+                  {loadingCompanies ? "Loading makers from Vahan..." : "No matches found on Vahan portal"}
                 </div>
               ) : (
                 filteredBaseCompanies.map(c => (
@@ -163,9 +170,14 @@ export const SidebarFilters = ({
               borderRadius: '4px', zIndex: 10, maxHeight: '250px', overflowY: 'auto',
               boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)'
             }}>
-              {filteredCompetitorCompanies.length === 0 ? (
+              {loadingCompetitorSearch ? (
+                <div style={{ padding: '10px', color: '#60a5fa', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span className="spinner" style={{ width: '14px', height: '14px', margin: 0, borderWidth: '2px' }}></span>
+                  Searching Vahan portal...
+                </div>
+              ) : filteredCompetitorCompanies.length === 0 ? (
                 <div style={{ padding: '10px', color: '#94a3b8' }}>
-                  {loadingCompanies ? "Loading makers from Vahan..." : "No matches found"}
+                  {loadingCompanies ? "Loading makers from Vahan..." : "No matches found on Vahan portal"}
                 </div>
               ) : (
                 filteredCompetitorCompanies.map(c => (
