@@ -16,12 +16,14 @@ export const Header = ({
   setTimeFilter,
   fromYear,
   toYear,
+  selectedFuels = [],
+  setSelectedFuels,
   clearAllFilters,
   data,
   cityRtoData,
   selectedCompanies
 }) => {
-  const hasActiveFilters = stateCode || (selectedCities && selectedCities.length > 0) || timeFilter !== "As on Date";
+  const hasActiveFilters = stateCode || (selectedCities && selectedCities.length > 0) || timeFilter !== "As on Date" || (selectedFuels && selectedFuels.length > 0);
 
   return (
     <header className="top-header" style={{ marginBottom: '1.5rem' }}>
@@ -79,6 +81,13 @@ export const Header = ({
                 <div style={{ display: 'flex', alignItems: 'center', background: 'var(--bg-card)', border: '1px solid var(--border)', padding: '2px 8px', borderRadius: '12px', color: 'var(--text-main)' }}>
                   Year: {fromYear === toYear ? fromYear : `${fromYear}-${toYear}`}
                   <button onClick={() => setTimeFilter("As on Date")} style={{ background: 'none', border: 'none', color: '#ef4444', marginLeft: '4px', cursor: 'pointer', fontSize: '14px' }}>×</button>
+                </div>
+              )}
+
+              {selectedFuels && selectedFuels.length > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', background: 'var(--bg-card)', border: '1px solid var(--border)', padding: '2px 8px', borderRadius: '12px', color: 'var(--text-main)' }}>
+                  Fuels: {selectedFuels.join(', ')}
+                  <button onClick={() => setSelectedFuels && setSelectedFuels([])} style={{ background: 'none', border: 'none', color: '#ef4444', marginLeft: '4px', cursor: 'pointer', fontSize: '14px' }}>×</button>
                 </div>
               )}
 

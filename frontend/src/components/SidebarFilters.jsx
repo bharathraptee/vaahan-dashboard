@@ -1,5 +1,6 @@
 import React from 'react'
 import { STATES } from '../constants/states'
+import { FUEL_TYPES } from '../constants/fuels'
 
 export const SidebarFilters = ({
   isSidebarOpen,
@@ -30,6 +31,10 @@ export const SidebarFilters = ({
   setFromYear,
   toYear,
   setToYear,
+  selectedFuels = [],
+  toggleFuel,
+  removeFuel,
+  setSelectedFuels,
   stateCode,
   setStateCode,
   selectedCities,
@@ -236,6 +241,79 @@ export const SidebarFilters = ({
             </div>
           </div>
         )}
+      </details>
+
+      {/* Fuel Type Multi-Select Filter Collapsible */}
+      <details className="filter-details" open>
+        <summary className="filter-summary">
+          Fuel Filter {selectedFuels && selectedFuels.length > 0 && `(${selectedFuels.length})`}
+        </summary>
+        <div className="filter-group" style={{ marginTop: '10px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+            <label style={{ fontSize: '11px', margin: 0 }}>Select Fuel Types</label>
+            {selectedFuels && selectedFuels.length > 0 && (
+              <button
+                onClick={() => setSelectedFuels && setSelectedFuels([])}
+                style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: '10px', padding: 0 }}
+              >
+                Clear All
+              </button>
+            )}
+          </div>
+          
+          <div style={{ position: 'relative', marginBottom: '8px' }}>
+            <select
+              value=""
+              onChange={(e) => {
+                if (e.target.value && toggleFuel) {
+                  toggleFuel(e.target.value);
+                }
+              }}
+              style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid var(--input-border)', background: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '11px' }}
+            >
+              <option value="">+ Add Fuel Type...</option>
+              {FUEL_TYPES.filter(f => f.value && !selectedFuels.includes(f.value)).map(f => (
+                <option key={f.value} value={f.value}>{f.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {selectedFuels && selectedFuels.length > 0 ? (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
+              {selectedFuels.map(fVal => {
+                const item = FUEL_TYPES.find(f => f.value === fVal);
+                const label = item ? item.label : fVal;
+                return (
+                  <span
+                    key={fVal}
+                    style={{
+                      background: 'rgba(52, 211, 153, 0.12)',
+                      border: '1px solid rgba(52, 211, 153, 0.35)',
+                      color: '#10b981',
+                      padding: '4px 8px',
+                      borderRadius: '14px',
+                      fontSize: '11px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      lineHeight: '1'
+                    }}
+                  >
+                    {label}
+                    <span
+                      onClick={() => removeFuel && removeFuel(fVal)}
+                      style={{ cursor: 'pointer', fontWeight: 'bold', fontSize: '13px', lineHeight: '1', display: 'flex', alignItems: 'center' }}
+                    >×</span>
+                  </span>
+                );
+              })}
+            </div>
+          ) : (
+            <div style={{ fontSize: '10px', color: '#94a3b8', fontStyle: 'italic', marginTop: '2px' }}>
+              All fuel types included by default.
+            </div>
+          )}
+        </div>
       </details>
 
       {/* Location Filter Collapsible */}

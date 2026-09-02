@@ -31,12 +31,15 @@ function App() {
   const companyFilters = useCompanyFilters()
   const { selectedCompanies } = companyFilters
 
-  // 3. Location & Time Filters
+  // 3. Location, Fuel & Time Filters
   const locationFilters = useLocationFilters()
   const {
     timeFilter, setTimeFilter,
     fromYear, setFromYear,
     toYear, setToYear,
+    selectedFuels, setSelectedFuels,
+    toggleFuel, removeFuel,
+    fuelType,
     stateCode, setStateCode,
     selectedCities, setSelectedCities,
     areaInput, setAreaInput,
@@ -51,6 +54,7 @@ function App() {
     timeFilter,
     fromYear,
     toYear,
+    fuelType,
     stateCode,
     rtoCode,
     selectedCities,
@@ -71,7 +75,8 @@ function App() {
     selectedCompanies,
     timeFilter,
     fromYear,
-    toYear
+    toYear,
+    fuelType
   })
 
   // 6. Interactive Drilldown Module (Click-to-Drilldown into State RTOs)
@@ -79,7 +84,8 @@ function App() {
     timeFilter,
     fromYear,
     toYear,
-    stateCode
+    stateCode,
+    fuelType
   })
 
   const yearlyTrendChartData = useMemo(() => {
@@ -131,6 +137,10 @@ function App() {
         setFromYear={setFromYear}
         toYear={toYear}
         setToYear={setToYear}
+        selectedFuels={selectedFuels}
+        setSelectedFuels={setSelectedFuels}
+        toggleFuel={toggleFuel}
+        removeFuel={removeFuel}
         stateCode={stateCode}
         setStateCode={setStateCode}
         selectedCities={selectedCities}
@@ -164,6 +174,8 @@ function App() {
           setTimeFilter={setTimeFilter}
           fromYear={fromYear}
           toYear={toYear}
+          selectedFuels={selectedFuels}
+          setSelectedFuels={setSelectedFuels}
           clearAllFilters={clearAllFilters}
           data={data}
           cityRtoData={cityRtoData}

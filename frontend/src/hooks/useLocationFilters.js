@@ -7,6 +7,26 @@ export const useLocationFilters = () => {
   const [fromYear, setFromYear] = useState(2026)
   const [toYear, setToYear] = useState(2026)
   
+  // Multi-Fuel Selection State
+  const [selectedFuels, setSelectedFuels] = useState([])
+  const fuelType = useMemo(() => selectedFuels.join(","), [selectedFuels])
+
+  const toggleFuel = (fuelVal) => {
+    if (!fuelVal) {
+      setSelectedFuels([])
+      return
+    }
+    if (selectedFuels.includes(fuelVal)) {
+      setSelectedFuels(selectedFuels.filter(f => f !== fuelVal))
+    } else {
+      setSelectedFuels([...selectedFuels, fuelVal])
+    }
+  }
+
+  const removeFuel = (fuelVal) => {
+    setSelectedFuels(selectedFuels.filter(f => f !== fuelVal))
+  }
+
   const [stateCode, setStateCode] = useState("")
   const [rtos, setRtos] = useState([])
   const [selectedCities, setSelectedCities] = useState([])
@@ -43,6 +63,7 @@ export const useLocationFilters = () => {
     setTimeFilter("As on Date")
     setFromYear(2026)
     setToYear(2026)
+    setSelectedFuels([])
     setStateCode("")
     setRtos([])
     setSelectedCities([])
@@ -57,6 +78,11 @@ export const useLocationFilters = () => {
     setFromYear,
     toYear,
     setToYear,
+    selectedFuels,
+    setSelectedFuels,
+    toggleFuel,
+    removeFuel,
+    fuelType,
     stateCode,
     setStateCode,
     rtos,

@@ -7,6 +7,7 @@ export const useDashboardData = ({
   timeFilter,
   fromYear,
   toYear,
+  fuelType,
   stateCode,
   rtoCode,
   selectedCities,
@@ -44,7 +45,7 @@ export const useDashboardData = ({
         toYear: timeFilter === "As on Date" ? new Date().getFullYear() : parseInt(toYear),
         stateCode,
         rtoCode: parseInt(rtoCode),
-        fuelType: "",
+        fuelType: fuelType || "",
         vehicleCategory: "",
         ...filterOverrides
       }

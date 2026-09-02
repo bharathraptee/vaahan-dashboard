@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Union
 
 class FilterPayload(BaseModel):
     companies: List[str]
@@ -8,7 +8,7 @@ class FilterPayload(BaseModel):
     toYear: int
     stateCode: str
     rtoCode: int
-    fuelType: str
+    fuelType: Union[str, List[str]] = ""
     vehicleCategory: str
 
 class RtoBreakdownPayload(FilterPayload):
@@ -18,6 +18,11 @@ def get_base_params(payload: FilterPayload):
     """
     Transforms UI filter payload into Vahan query parameter dictionary.
     """
+    if isinstance(payload.fuelType, list):
+        fuel_val = ",".join(payload.fuelType)
+    else:
+        fuel_val = str(payload.fuelType or "")
+
     params = {
         "fromYear": payload.fromYear,
         "toYear": payload.toYear,
@@ -25,7 +30,7 @@ def get_base_params(payload: FilterPayload):
         "vehicleClasses": "",
         "vehicleSubCategories": "",
         "vehicleEmissions": "",
-        "vehicleFuels": payload.fuelType,
+        "vehicleFuels": fuel_val,
         "vehicleCategoryGroup": payload.vehicleCategory,
         "evType": "",
         "vehicleStatus": "",

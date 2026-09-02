@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { STATES } from '../constants/states'
 import { fetchCompanyTop5Rtos } from '../api'
 
-export const useCompanyDrilldown = ({ timeFilter, fromYear, toYear, stateCode }) => {
+export const useCompanyDrilldown = ({ timeFilter, fromYear, toYear, stateCode, fuelType }) => {
   const [companyDrilldown, setCompanyDrilldown] = useState({})
 
   const handleCompanyBarClick = async (company, clickData) => {
@@ -23,7 +23,7 @@ export const useCompanyDrilldown = ({ timeFilter, fromYear, toYear, stateCode })
         timeFilter,
         fromYear: timeFilter === "As on Date" ? 2000 : parseInt(fromYear),
         toYear: timeFilter === "As on Date" ? new Date().getFullYear() : parseInt(toYear),
-        fuelType: "",
+        fuelType: fuelType || "",
         vehicleCategory: ""
       }
       const resData = await fetchCompanyTop5Rtos(company, stateObj.code, basePayload)

@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { fetchRtos, fetchCityRtoBreakdown } from '../api'
 import { extractCleanCity } from '../utils/formatters'
 
-export const useMultiCity = ({ selectedCompanies, timeFilter, fromYear, toYear }) => {
+export const useMultiCity = ({ selectedCompanies, timeFilter, fromYear, toYear, fuelType }) => {
   const [multiCityStateCode, setMultiCityStateCode] = useState("")
   const [multiCityRtos, setMultiCityRtos] = useState([])
   const [loadingMultiCityRtos, setLoadingMultiCityRtos] = useState(false)
@@ -69,7 +69,7 @@ export const useMultiCity = ({ selectedCompanies, timeFilter, fromYear, toYear }
         toYear: timeFilter === "As on Date" ? new Date().getFullYear() : parseInt(toYear),
         stateCode: stCode,
         rtoCode: 0,
-        fuelType: "",
+        fuelType: fuelType || "",
         vehicleCategory: ""
       }
 
