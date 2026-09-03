@@ -1,5 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { extractAvailableYears } from '../utils/formatters'
+
+const MONTH_ORDER = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 
 export const DurationSegregationSection = React.memo(({
   apiData,
@@ -11,39 +13,63 @@ export const DurationSegregationSection = React.memo(({
   setDurationTableYear,
   getCompanyColor
 }) => {
+  // 1. ALL HOOKS UNCONDITIONALLY AT THE TOP
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' })
 
-  if (!apiData) return null
+  // Extract raw rows
+  const rows = useMemo(() => {
+    if (!apiData) return []
+    const monthMap = {}
+    const order = []
+    selectedCompanies.forEach(company => {
+      const compData = apiData[company]?.["Month Wise (Duration)"]
+      if (Array.isArray(compData)) {
+        compData.forEach(row => {
+          const monthKey = row.yearAsString || row.year
+          if (!monthMap[monthKey]) {
+            monthMap[monthKey] = { monthKey }
+            order.push(monthKey)
+          }
+          monthMap[monthKey][company] = row.registeredVehicleCount || 0
+        })
+      }
+    })
 
-  const monthMap = {}
-  const order = [] // To preserve API order
-  selectedCompanies.forEach(company => {
-    const compData = apiData[company]?.["Month Wise (Duration)"]
-    if (Array.isArray(compData)) {
-      compData.forEach(row => {
-        const monthKey = row.yearAsString || row.year
-        if (!monthMap[monthKey]) {
-          monthMap[monthKey] = { monthKey }
-          order.push(monthKey)
+    let parsed = order.map(k => monthMap[k])
+    if (timeFilter === "Calendar Year") {
+      const fY = parseInt(fromYear)
+      const tY = parseInt(toYear)
+      parsed = parsed.filter(row => {
+        const yearMatch = row.monthKey.match(/^(\d{4})/)
+        if (yearMatch) {
+          const y = parseInt(yearMatch[1])
+          return y >= fY && y <= tY
         }
-        monthMap[monthKey][company] = row.registeredVehicleCount || 0
+        return true
       })
     }
-  })
-  
-  let rows = order.map(k => monthMap[k])
-  if (timeFilter === "Calendar Year") {
-     const fY = parseInt(fromYear)
-     const tY = parseInt(toYear)
-     rows = rows.filter(row => {
-       const yearMatch = row.monthKey.match(/^(\d{4})/)
-       if (yearMatch) {
-         const y = parseInt(yearMatch[1])
-         return y >= fY && y <= tY
-       }
-       return true
-     })
+    return parsed
+  }, [apiData, selectedCompanies, timeFilter, fromYear, toYear])
+
+  // Extract unique available years
+  const sortedYears = useMemo(() => {
+    return extractAvailableYears(rows.map(r => r.monthKey))
+  }, [rows])
+
+  let currentTableYear = durationTableYear
+  if (!currentTableYear || !sortedYears.includes(currentTableYear)) {
+    currentTableYear = sortedYears[0] || ""
   }
+
+  // Hook: Sync durationTableYear
+  useEffect(() => {
+    if (currentTableYear && durationTableYear !== currentTableYear) {
+      setDurationTableYear(currentTableYear)
+    }
+  }, [currentTableYear, durationTableYear, setDurationTableYear])
+
+  // 2. EARLY RETURNS STRICTLY AFTER ALL HOOKS
+  if (!apiData) return null
 
   if (rows.length === 0) {
     return (
@@ -58,26 +84,9 @@ export const DurationSegregationSection = React.memo(({
     )
   }
 
-  // Extract unique years available in the data for the dropdown
-  const sortedYears = extractAvailableYears(rows.map(r => r.monthKey))
-  const availableYears = new Set(sortedYears)
-  
-  let currentTableYear = durationTableYear
-  if (!currentTableYear || !availableYears.has(currentTableYear)) {
-    currentTableYear = sortedYears[0]
-  }
-
-  React.useEffect(() => {
-    if (durationTableYear !== currentTableYear && currentTableYear) {
-      setDurationTableYear(currentTableYear)
-    }
-  }, [currentTableYear, durationTableYear, setDurationTableYear])
-  
-  const MONTH_ORDER = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
-  
+  // 3. TABLE LOGIC & RENDERING
   let finalRows = rows.filter(row => row.monthKey.startsWith(currentTableYear))
-  
-  // Always sort finalRows chronologically for the columns
+
   finalRows.sort((a, b) => {
     const monthA = a.monthKey.includes('-') ? a.monthKey.split('-')[1] : a.monthKey
     const monthB = b.monthKey.includes('-') ? b.monthKey.split('-')[1] : b.monthKey
@@ -150,14 +159,14 @@ export const DurationSegregationSection = React.memo(({
               {sortedCompanies.length === 0 ? (
                 <tr><td colSpan={finalRows.length + 2}>No Data</td></tr>
               ) : (
-                sortedCompanies.map((company, idx) => {
+                sortedCompanies.map((company) => {
                   return (
                     <tr key={company}>
                       <td style={{ fontWeight: 500, color: getCompanyColor(company), padding: '0.6rem 0.5rem', fontSize: '0.8rem', whiteSpace: 'normal', wordWrap: 'break-word', lineHeight: '1.2' }}>{company}</td>
                       {finalRows.map(row => {
                         const val = row[company] || 0
                         const maxForMonth = Math.max(...selectedCompanies.map(c => row[c] || 0))
-                        const intensity = maxForMonth > 0 ? (val / maxForMonth) * 0.15 : 0;
+                        const intensity = maxForMonth > 0 ? (val / maxForMonth) * 0.15 : 0
                         return (
                           <td key={row.monthKey} style={{ color: getCompanyColor(company), backgroundColor: `rgba(52, 211, 153, ${intensity})`, padding: '0.6rem 0.5rem', fontSize: '0.8rem', textAlign: 'center' }}>
                             {val.toLocaleString()}

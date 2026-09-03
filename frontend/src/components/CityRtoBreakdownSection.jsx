@@ -1,5 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { extractAvailableYears } from '../utils/formatters'
+
+const MONTH_ORDER = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 
 export const CityRtoBreakdownSection = React.memo(({
   cityRtoData,
@@ -12,8 +14,65 @@ export const CityRtoBreakdownSection = React.memo(({
   setCityRtoMonthFilter,
   getCompanyColor
 }) => {
+  // 1. ALL HOOKS UNCONDITIONALLY AT THE TOP
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' })
 
+  // Extract unique months safely
+  const allMonths = useMemo(() => {
+    if (!cityRtoData) return new Set()
+    const months = new Set()
+    Object.values(cityRtoData).forEach(companyData => {
+      Object.values(companyData).forEach(dataArr => {
+        if (Array.isArray(dataArr)) {
+          dataArr.forEach(row => {
+            const m = row.yearAsString || row.year
+            if (m) months.add(m)
+          })
+        }
+      })
+    })
+    return months
+  }, [cityRtoData])
+
+  // Determine available years
+  const sortedYears = useMemo(() => {
+    return extractAvailableYears(Array.from(allMonths))
+  }, [allMonths])
+
+  let currentTableYear = cityRtoTableYear
+  if (!currentTableYear || !sortedYears.includes(currentTableYear)) {
+    currentTableYear = sortedYears[0] || ""
+  }
+
+  // Hook 1: Sync table year
+  useEffect(() => {
+    if (currentTableYear && cityRtoTableYear !== currentTableYear) {
+      setCityRtoTableYear(currentTableYear)
+    }
+  }, [currentTableYear, cityRtoTableYear, setCityRtoTableYear])
+
+  // Determine available months for selected year
+  const monthsForYear = useMemo(() => {
+    if (!currentTableYear) return []
+    return Array.from(allMonths)
+      .filter(m => m.startsWith(currentTableYear))
+      .map(m => m.includes('-') ? m.split('-')[1] : m)
+      .sort((a, b) => MONTH_ORDER.indexOf(a) - MONTH_ORDER.indexOf(b))
+  }, [allMonths, currentTableYear])
+
+  let currentMonth = cityRtoMonthFilter
+  if (!currentMonth || !monthsForYear.includes(currentMonth)) {
+    currentMonth = monthsForYear[0] || ""
+  }
+
+  // Hook 2: Sync month filter
+  useEffect(() => {
+    if (currentMonth && cityRtoMonthFilter !== currentMonth) {
+      setCityRtoMonthFilter(currentMonth)
+    }
+  }, [currentMonth, cityRtoMonthFilter, setCityRtoMonthFilter])
+
+  // 2. EARLY RETURNS STRICTLY AFTER ALL HOOKS
   if (!cityRtoData && !loadingCityRto) return null
 
   if (loadingCityRto) {
@@ -24,53 +83,8 @@ export const CityRtoBreakdownSection = React.memo(({
     )
   }
 
-  // Extract all unique months
-  const allMonths = new Set()
-  Object.values(cityRtoData).forEach(companyData => {
-    Object.values(companyData).forEach(dataArr => {
-      if (Array.isArray(dataArr)) {
-        dataArr.forEach(row => {
-          const m = row.yearAsString || row.year
-          if (m) allMonths.add(m)
-        })
-      }
-    })
-  })
-
-  // Determine available years
-  const sortedYears = extractAvailableYears(Array.from(allMonths))
-  const availableYears = new Set(sortedYears)
-  
-  let currentTableYear = cityRtoTableYear
-  if (!currentTableYear || !availableYears.has(currentTableYear)) {
-    currentTableYear = sortedYears[0]
-  }
-
-  React.useEffect(() => {
-    if (cityRtoTableYear !== currentTableYear && currentTableYear) {
-      setCityRtoTableYear(currentTableYear)
-    }
-  }, [currentTableYear, cityRtoTableYear, setCityRtoTableYear])
-
-  const MONTH_ORDER = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
-
-  const monthsForYear = Array.from(allMonths)
-    .filter(m => m.startsWith(currentTableYear))
-    .map(m => m.includes('-') ? m.split('-')[1] : m)
-    .sort((a, b) => MONTH_ORDER.indexOf(a) - MONTH_ORDER.indexOf(b))
-  
-  let currentMonth = cityRtoMonthFilter
-  if (!currentMonth || !monthsForYear.includes(currentMonth)) {
-     currentMonth = monthsForYear[0]
-  }
-
-  React.useEffect(() => {
-    if (cityRtoMonthFilter !== currentMonth && currentMonth) {
-      setCityRtoMonthFilter(currentMonth)
-    }
-  }, [currentMonth, cityRtoMonthFilter, setCityRtoMonthFilter])
-
-  const rtoNames = Object.keys(cityRtoData)
+  // 3. TABLE LOGIC & RENDERING
+  const rtoNames = Object.keys(cityRtoData || {})
 
   const handleSort = (key) => {
     let direction = 'desc'
@@ -92,7 +106,7 @@ export const CityRtoBreakdownSection = React.memo(({
   }
 
   const sortedRtoNames = [...rtoNames].sort((a, b) => {
-    if (!sortConfig.key) return 0;
+    if (!sortConfig.key) return 0
     if (sortConfig.key === 'rto') {
       return sortConfig.direction === 'asc' ? a.localeCompare(b) : b.localeCompare(a)
     } else {
@@ -118,65 +132,54 @@ export const CityRtoBreakdownSection = React.memo(({
                 {sortedYears.map(y => <option key={y} value={y}>{y}</option>)}
               </select>
             </div>
-            
             <div style={{ display: 'flex', alignItems: 'center' }}>
               <label style={{ marginRight: '10px', fontSize: '13px', color: 'var(--text-muted)' }}>Select Month:</label>
               <select 
                 value={currentMonth} 
                 onChange={(e) => setCityRtoMonthFilter(e.target.value)}
-                style={{ padding: '6px 10px', borderRadius: '4px', background: 'var(--input-bg)', color: 'var(--text-main)', border: '1px solid var(--input-border)', cursor: 'pointer', minWidth: '120px' }}
+                style={{ padding: '6px 10px', borderRadius: '4px', background: 'var(--input-bg)', color: 'var(--text-main)', border: '1px solid var(--input-border)', cursor: 'pointer', minWidth: '110px' }}
               >
                 {monthsForYear.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
             </div>
           </div>
-          
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th onClick={() => handleSort('rto')} style={{ cursor: 'pointer' }}>
-                  RTO Name {sortConfig.key === 'rto' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
-                </th>
-                {selectedCompanies.map(c => (
-                  <th key={c} onClick={() => handleSort(c)} style={{ color: getCompanyColor(c), cursor: 'pointer' }}>
-                    {c} {sortConfig.key === c ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {sortedRtoNames.map((rto, idx) => {
-                 const vals = selectedCompanies.map(c => getCompanyCount(rto, c))
-                 const maxVal = Math.max(...vals)
 
-                 return (
-                   <tr key={idx}>
-                     <td style={{ fontWeight: 500 }}>{rto}</td>
-                     {selectedCompanies.map(c => {
-                        const count = getCompanyCount(rto, c)
-                        const intensity = maxVal > 0 ? (count / maxVal) * 0.15 : 0;
-                        return (
-                          <td key={c} style={{ color: getCompanyColor(c), backgroundColor: `rgba(52, 211, 153, ${intensity})` }}>
-                            {count.toLocaleString()}
-                          </td>
-                        )
-                     })}
-                   </tr>
-                 )
-              })}
-            </tbody>
-            {rtoNames.length > 0 && (
-              <tfoot>
-                <tr style={{ fontWeight: 'bold', background: 'var(--table-footer-bg)', borderTop: '2px solid var(--accent)' }}>
-                  <td style={{ color: 'var(--text-main)', fontSize: '0.95rem' }}>Total</td>
-                  {selectedCompanies.map(c => {
-                     const sum = rtoNames.reduce((acc, rto) => acc + getCompanyCount(rto, c), 0)
-                     return <td key={c} style={{ color: getCompanyColor(c), fontSize: '1rem', fontWeight: 700 }}>{sum.toLocaleString()}</td>
-                  })}
+          <div style={{ overflowX: 'auto' }}>
+            <table>
+              <thead>
+                <tr>
+                  <th onClick={() => handleSort('rto')} style={{ cursor: 'pointer' }}>
+                    RTO Office {sortConfig.key === 'rto' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                  </th>
+                  {selectedCompanies.map(c => (
+                    <th 
+                      key={c} 
+                      onClick={() => handleSort(c)}
+                      style={{ color: getCompanyColor(c), cursor: 'pointer' }}
+                    >
+                      {c} {sortConfig.key === c && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                    </th>
+                  ))}
                 </tr>
-              </tfoot>
-            )}
-          </table>
+              </thead>
+              <tbody>
+                {sortedRtoNames.length === 0 ? (
+                  <tr><td colSpan={selectedCompanies.length + 1} style={{ textAlign: 'center', color: '#94a3b8' }}>No data for selected period</td></tr>
+                ) : (
+                  sortedRtoNames.map(rto => (
+                    <tr key={rto}>
+                      <td style={{ fontWeight: 'bold' }}>{rto}</td>
+                      {selectedCompanies.map(c => (
+                        <td key={c} style={{ textAlign: 'right' }}>
+                          {getCompanyCount(rto, c).toLocaleString()}
+                        </td>
+                      ))}
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
